@@ -1,0 +1,221 @@
+class BallClock
+
+  class BallQueue
+    def initialize
+      @q = []
+    end
+
+    def enqueue(x)
+      @q << x
+    end
+
+    def dequeue
+      @q.shift
+    end
+
+    def peek
+      @q.first
+    end
+
+    def length
+      @q.length
+    end
+
+    def empty?
+      @q.empty?
+    end
+  end
+
+  class BallStack
+# @param integer m
+    def max (m)
+      if m > 0
+        @max = m
+      end
+    end
+
+    def limit()
+      @max
+    end
+
+    def rollup()
+      s = Array.new
+      s = @stack
+      t = 0
+      place = 0
+      s.each { |each|
+        place += 1
+        t += each*place
+      } if s.length > 0
+      return t
+    end
+
+    def size()
+      @stack.length
+    end
+
+    def initialize
+      @stack = []
+    end
+
+    def push(x)
+      @stack.push x
+    end
+
+    def pop
+      @stack.pop
+    end
+
+    def peek
+      @stack.last
+    end
+
+    def empty?
+      @stack.empty?
+    end
+  end
+
+  class Pattern
+    def initialize()
+      @ampm = $ampm
+      @days = $days
+      @mtotal = 0
+      @ftotal = 0
+      @htotal = 0
+      @mtotal = $mtrack.rollup
+      @ftotal = $ftrack.rollup
+      @htotal = $htrack.rollup
+    end
+    def mtotal
+      @mtotal
+    end
+    def ftotal
+      @ftotal
+    end
+    def htotal
+      @htotal
+    end
+    def ampm
+      @ampm
+    end
+    def days
+      @days
+    end
+  end
+
+  def initialize()
+    @patterns = []
+    @clockballs = 27
+    # @clockballs = load_clock_balls()
+    @queue = BallQueue.new
+    $mtrack = $ftrack = $htrack = BallStack.new
+    $mtrack.max(5)
+    $ftrack.max(12)
+    $htrack.max(11)
+    $ampm = 0
+    $days = 0
+  end
+
+  #def load_clock_balls(in_file)
+  #  File.open(in_file, 'r') do |raw|
+  #   while ball = raw.gets
+  #
+  #   end
+  #  end
+  #end
+
+  def recycle(track)
+    if tmp = Array.try_convert(track)
+      for i in track.length
+        @queue.enqueue(track.pop)
+      end
+    end
+  end
+
+  def load_clock()
+    for ball in 1..@clockballs do
+      @queue.enqueue(ball)
+    end
+    drop($mtrack,@queue.dequeue)
+  end
+
+  # @param [BallStack] track
+  # @param [Object] ball
+  def drop(track,ball)
+    while true do
+      ball = @queue.dequeue()
+      track.push(ball)
+      tilt(track) if track.size.equal?(track.limit)
+      pattern = Pattern.new
+      puts('minute ball')
+      break if check_pattern(pattern)
+      @patterns << pattern
+    end
+  end
+
+  # @param [Pattern] pattern
+  def check_pattern(pattern)
+    if pattern.kind_of?(Pattern) && @patterns.length > 0
+      for i in @patterns do
+        if @patterns.kind_of?(Array)
+           compare_patterns(@patterns[i], pattern) ? true : false
+        end
+      end
+    end
+  end
+
+  # @param [Pattern] pattern1
+  # @param [Pattern] pattern2
+  def compare_patterns(pattern1,pattern2)
+    if pattern1.kind_of?(Pattern) && pattern2.kind_of?(Pattern)
+       if pattern1.mtotal.equal?(pattern2.mtotal)
+          if pattern1.ftotal.equal?(pattern2.ftotal)
+            if pattern1.htotal.equal?(pattern2.htotal)
+              if pattern1.ampm.equal?(pattern2.ampm)
+                if pattern1.days.equal?(pattern2.days)
+                   return true
+                end
+              end
+            end
+          end
+        end
+    end
+     return false
+  end
+
+  # @param [integer] ball
+  # @param [BallStack] track
+  def promote(ball,track)
+    if tmp = Array.try_convert(track)
+    if track.limit.equal?(5) #minute track
+      puts ('promote to ftrack')
+      drop($ftrack,ball)   #promote to 5 minute track
+    end
+    if track.limit.equal?(12) # 5 minute track
+      puts ('promote to htrack')
+      drop($htrack,ball)    #promote to hour track
+    end
+    if track.limit.equal?(11) # hour track
+      puts ('promote to ampm')
+      ball = $htrack.pop    # promote to ampm count
+      @queue.enqueue(ball)
+      $ampm += 1
+      if $ampm.equal?(2)  # promote ampm to days
+        puts ('promote to day')
+        $ampm = 0
+        $days += 1
+      end
+    end
+    end
+  end
+
+  # @param [Object] track
+  def tilt(track)  #type = 0,1,5,12,24
+  promote(track,track.pop)
+  recycle(track)
+  end
+end
+
+bc = BallClock.new
+#bc.load_clock_balls("/home/jayjohn/attic/clock_balls.txt")
+bc.load_clock
